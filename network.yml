@@ -48,7 +48,7 @@ Resources:
       VpcId: !Ref VPC
       CidrBlock: !Ref PublicSubnet1Cidr
       MapPublicIpOnLaunch: true
-      AvailabilityZone: !Select [0, !GetAZs us-east-1]
+      AvailabilityZone: !Select [0, !GetAZs 'us-east-1']
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName} Public Subnet 1 (AZ 1)
@@ -58,7 +58,7 @@ Resources:
       VpcId: !Ref VPC
       CidrBlock: !Ref PublicSubnet2Cidr
       MapPublicIpOnLaunch: true
-      AvailabilityZone: !Select [1, !GetAZs us-east-1]
+      AvailabilityZone: !Select [1, !GetAZs 'us-east-1']
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName} Public Subnet 2 (AZ 2)
@@ -72,6 +72,7 @@ Resources:
   DefaultRoutePublic:
     Type: AWS::EC2::Route
     Properties:
+      RouteTableId: !Ref PublicRouteTable
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
   PublicSubnet1RouteTableAssociation:
