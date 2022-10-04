@@ -1,5 +1,4 @@
 Description: >
-  Mostafa Ibrahim
   This template deploys
   -A VPC, with a pair of public and private subnets spread across two AZs.
   -Internet Gateway with a default route on the public subnets.
@@ -18,6 +17,12 @@ Parameters:
   PublicSubnet2Cidr:
     Type: String
     Default: 10.0.1.0/24
+  PrivateSubnet1Cidr:
+    Type: String
+    Default: 10.0.2.0/24
+  PrivateSubnet2Cidr:
+    Type: String
+    Default: 10.0.3.0/24
   
 Resources:
   VPC:
@@ -28,7 +33,7 @@ Resources:
       Tags:
         - Key: Name
           Value: !Ref EnvironmentName
-  #-------------------------------------------------
+  # InternetGateway and its attachment to the VPC
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
@@ -41,7 +46,7 @@ Resources:
     Properties:
       InternetGatewayId: !Ref InternetGateway
       VpcId: !Ref VPC
-  #-------------------------------------------------
+  # Public Subnets, Public Subnets RouteTable, Public Subnets RouteTable Association, Default Route
   PublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
@@ -85,5 +90,101 @@ Resources:
     Properties:
       RouteTableId: !Ref PublicRouteTable
       SubnetId: !Ref PublicSubnet2
+  #NATGatways and their elastic IPs
+  NATGatewayEIP1:
+    Type: AWS::EC2::EIP
+    DependsOn: VPCIGWAttachment
+    Properties:
+      Domain: vpc
+  NATGateway1:
+    Type: AWS::EC2::NatGateway
+    DependsOn: NATGatewayEIP1
+    Properties:
+      AllocationId: !GetAtt NATGatewayEIP1.AllocationId
+      SubnetId: !Ref PublicSubnet1
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} NATGateway 1 (Public Subnet 1, AZ 1)
+  NATGatewayEIP2:
+    Type: AWS::EC2::EIP
+    DependsOn: VPCIGWAttachment
+    Properties:
+      Domain: vpc
+  NATGateway2:
+    Type: AWS::EC2::NatGateway
+    DependsOn: NATGatewayEIP2
+    Properties:
+      AllocationId: !GetAtt NATGatewayEIP2.AllocationId
+      SubnetId: !Ref PublicSubnet2
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} NATGateway 2 (Public Subnet 2, AZ 2)
+  #Private Subnets, Their Route Tables, Default Routes (to the NAT gateways) and Private Subnets Route Tables Associations
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs 'us-east-1']
+      CidrBlock: !Ref PrivateSubnet1Cidr
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Subnet 1 (AZ 1) 
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !GetAZs 'us-east-1']
+      CidrBlock: !Ref PrivateSubnet2Cidr
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Subnet 2 (AZ 2) 
+  PrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Route Table 1
+  PrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Route Table 2
+  DefaultRoutePrivate1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway1
+  DefaultRoutePrivate2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway2
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      SubnetId: !Ref PrivateSubnet1
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      SubnetId: !Ref PrivateSubnet2
 
-  
+Outputs:
+  VPC:
+    Description: Reference to the created VPC
+    Value: !Ref VPC
+    Export:
+      Name: !Sub ${EnvironmentName}-VPCID
+  PrivateSubnets:
+    Description: List of private subnets in our vpc
+    Value: !Join ["," , [!Ref PrivateSubnet1, !Ref PrivateSubnet2]]
+    Export:
+      Name: !Sub ${EnvironmentName}-PRIV-SUBNETS
