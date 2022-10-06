@@ -128,4 +128,47 @@ Resources:
       - Type: forward
         TargetGroupArn: !Ref WebAppTargetGroup
 
-      
+  WebAppLaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      ImageId: ami-0ee23bfc74a881de5
+      SecurityGroups:
+      - Ref: WebAppServerSecurityGroup
+      InstanceType: t3.micro
+      BlockDeviceMappings:
+      - DeviceName: "/dev/sdk"
+        Ebs:
+          VolumeSize: '10'
+      UserData: !Base64 |
+        #!/bin/bash
+        sudo apt-get update -y
+        sudo apt-get install unzip awscli -y
+        sudo apt-get install apache2 -y
+        sudo systemctl start apache2.service
+        cd /var/www/html
+        aws s3 cp s3://udaprojectbucket-1/udagram.zip .
+        unzip -o udagram.zip      
+  WebAppAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier: 
+      - Fn::ImportValue:
+          !Sub "${EnvironmentName}-PRIV-SUBNETS"
+      LaunchConfigurationName: 
+        Ref: WebAppLaunchConfiguration
+      MinSize: '4'
+      DesiredCapacity: '4'
+      MaxSize: '8'
+      TargetGroupARNs: 
+      - Ref: WebAppTargetGroup
+  ListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref 'Listener'
+      Priority: 1
+      Actions:
+      - Type: forward
+        TargetGroupArn: !Ref WebAppTargetGroup
+      Conditions:
+      - Field: path-pattern
+        Values: [/]
