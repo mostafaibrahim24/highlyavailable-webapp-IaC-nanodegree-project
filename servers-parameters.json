@@ -1,0 +1,25 @@
+[
+    {
+        "ParameterKey":"EnvironmentName",
+        "ParameterValue": "UdacityProject"
+    },{
+        "ParameterKey":"BastionHostKeyPairName",
+        "ParameterValue":"bastion-host-key"
+    },
+    {
+        "ParameterKey":"WebAppServerAMIId",
+        "ParameterValue":"ami-0ee23bfc74a881de5"
+    },
+    {
+        "ParameterKey":"BastionHostAMIId",
+        "ParameterValue":"ami-0ee23bfc74a881de5"
+    },
+    {
+        "ParameterKey":"WebAppServerInstanceType",
+        "ParameterValue":"t3.small"
+    },
+    {
+        "ParameterKey":"BastionHostInstanceType",
+        "ParameterValue":"t2.micro"
+    }
+]

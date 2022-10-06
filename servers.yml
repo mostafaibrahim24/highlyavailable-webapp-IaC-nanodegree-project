@@ -1,8 +1,17 @@
 Parameters:
   EnvironmentName:
     Type: String
+  WebAppServerAMIId:
+    Type: String
+  BastionHostAMIId:
+    Type: String
+  WebAppServerInstanceType:
+    Type: String
+  BastionHostInstanceType:
+    Type: String
   BastionHostKeyPairName:
     Type: String
+  
 
 Resources:
   UdacityS3ReadOnlyEC2:
@@ -92,7 +101,7 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName} - Bastion Host's Security Group
-  #-----------------------
+
   WebAppLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -131,10 +140,10 @@ Resources:
   WebAppLaunchConfiguration:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
-      ImageId: ami-0ee23bfc74a881de5
+      ImageId: !Ref WebAppServerAMIId
       SecurityGroups:
       - Ref: WebAppServerSecurityGroup
-      InstanceType: t3.micro
+      InstanceType: !Ref WebAppServerInstanceType
       BlockDeviceMappings:
       - DeviceName: "/dev/sdk"
         Ebs:
@@ -178,8 +187,8 @@ Resources:
       SubnetId:
         Fn::ImportValue: !Sub "${EnvironmentName}-PUB1-SN"
       AvailabilityZone: !Select [0, !GetAZs '']
-      ImageId: ami-0ee23bfc74a881de5
-      InstanceType: t2.micro
+      ImageId: !Ref BastionHostAMIId
+      InstanceType: !Ref BastionHostInstanceType
       KeyName: !Ref BastionHostKeyPairName
       SecurityGroupIds:
         - !GetAtt BastionHostSecurityGroup.GroupId
@@ -189,8 +198,8 @@ Resources:
       SubnetId:
         Fn::ImportValue: !Sub "${EnvironmentName}-PUB2-SN"
       AvailabilityZone: !Select [1, !GetAZs '']
-      ImageId: ami-0ee23bfc74a881de5
-      InstanceType: t2.micro
+      ImageId: !Ref BastionHostAMIId
+      InstanceType: !Ref BastionHostInstanceType
       KeyName: !Ref BastionHostKeyPairName
       SecurityGroupIds:
         - !GetAtt BastionHostSecurityGroup.GroupId
