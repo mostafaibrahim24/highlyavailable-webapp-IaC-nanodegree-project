@@ -195,3 +195,9 @@ Resources:
       SecurityGroupIds:
         - !GetAtt BastionHostSecurityGroup.GroupId
       
+Outputs:
+  LoadBalancerDns:
+    Description: Web App LB DNS (URL)
+    Value: !Join ["", ["http://", !GetAtt WebAppLoadBalancer.DNSName]]
+    Export:
+      Name: !Sub "${EnvironmentName}-DNS-URL"
