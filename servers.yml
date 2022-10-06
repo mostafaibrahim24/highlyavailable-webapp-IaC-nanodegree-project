@@ -172,3 +172,26 @@ Resources:
       Conditions:
       - Field: path-pattern
         Values: [/]
+  BastionHost1:
+    Type: AWS::EC2::Instance
+    Properties:
+      SubnetId:
+        Fn::ImportValue: !Sub "${EnvironmentName}-PUB1-SN"
+      AvailabilityZone: !Select [0, !GetAZs '']
+      ImageId: ami-0ee23bfc74a881de5
+      InstanceType: t2.micro
+      KeyName: !Ref BastionHostKeyPairName
+      SecurityGroupIds:
+        - !GetAtt BastionHostSecurityGroup.GroupId
+  BastionHost2:
+    Type: AWS::EC2::Instance
+    Properties:
+      SubnetId:
+        Fn::ImportValue: !Sub "${EnvironmentName}-PUB2-SN"
+      AvailabilityZone: !Select [1, !GetAZs '']
+      ImageId: ami-0ee23bfc74a881de5
+      InstanceType: t2.micro
+      KeyName: !Ref BastionHostKeyPairName
+      SecurityGroupIds:
+        - !GetAtt BastionHostSecurityGroup.GroupId
+      
